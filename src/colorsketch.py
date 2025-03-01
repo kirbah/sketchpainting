@@ -4,7 +4,7 @@ from moviepy import ImageSequenceClip
 
 # ------------------- Configuration -------------------
 input_image = 'source/input_v3_small.jpg'          # Path to your input image
-output_video = 'output/color_drawing_animation_v3_1.mp4'
+output_video = 'output/color_drawing_animation_v3_3.mp4'
 frame_rate = 30                    # Frames per second
 desired_duration = 120             # Desired final video duration in seconds
 # -----------------------------------------------------
@@ -53,13 +53,15 @@ for cnt in contours:
         continue
     total_segments += len(cnt) - 1
 
-# Compute desired total frames for the video and a step factor to capture fewer frames.
+# Compute desired total frames for the video
 desired_total_frames = desired_duration * frame_rate
+# Determine a step factor to avoid capturing too many frames
 step_factor = max(1, int(total_segments / desired_total_frames))
 print("Total segments:", total_segments, "Step factor:", step_factor)
 # -----------------------------------------------------
 
-# For each contour, draw the stroke incrementally in color, capturing frames only every "step_factor" segments.
+# For each contour, draw the stroke incrementally in color,
+# capturing frames only every "step_factor" segments.
 for cnt in contours:
     cnt = cv2.approxPolyDP(cnt, epsilon=1.0, closed=False)
     cnt = cnt.squeeze()
@@ -103,6 +105,20 @@ for cnt in contours:
 # Optionally, hold the final image for a few extra frames at the end of the animation
 for _ in range(10):
     frames.append(canvas.copy())
+
+# Adjust the total number of frames to exactly desired_total_frames.
+current_total_frames = len(frames)
+if current_total_frames > desired_total_frames:
+    # Sample uniformly from the generated frames.
+    indices = np.linspace(0, current_total_frames - 1,
+                          desired_total_frames, dtype=int)
+    frames = [frames[i] for i in indices]
+elif current_total_frames < desired_total_frames:
+    # Pad with copies of the final frame.
+    extra_frames = desired_total_frames - current_total_frames
+    frames.extend([frames[-1].copy()] * extra_frames)
+
+print("Final frame count:", len(frames))
 
 # Convert frames from BGR (OpenCV format) to RGB (MoviePy format)
 frames_rgb = [cv2.cvtColor(frame, cv2.COLOR_BGR2RGB) for frame in frames]
